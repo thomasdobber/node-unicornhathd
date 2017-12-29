@@ -1,4 +1,5 @@
-var SPI = require('pi-spi');
+var SPI = require('pi-spi'),
+    chalk = require('chalk');
 
 function UnicornHatHD(device) {
     this.matrix = [];
@@ -16,7 +17,12 @@ function UnicornHatHD(device) {
 
     this.brightness = 0.5;
 
-    this.spi = SPI.initialize(device);
+    try {
+        this.spi = SPI.initialize(device);
+    } catch (e) {
+        this.debugMode = true;
+        console.log('Device not available, debug mode enabled.');
+    }
 }
 
 UnicornHatHD.prototype.setBrightness = function (brightness) {
@@ -88,11 +94,26 @@ UnicornHatHD.prototype.show = function (flip_horizontal, flip_vertical) {
         }
     }
 
-    this.spi.write(Buffer.concat([new Buffer([0x72]), buffer]), function (err) {
-        if (err) {
-            throw 'Something went wrong!';
+    if(!this.debugMode) {
+        this.spi.write(Buffer.concat([new Buffer([0x72]), buffer]), function (err) {
+            if (err) {
+                throw 'Something went wrong!';
+            }
+        });
+    } else {
+        // log the matrix to the console
+        for (var y=0; y<16; y++) {
+            xStr = '';
+            for (var x=0; x<16; x++) {
+                xStr += colorChar(this.matrix[x][y], '■ ');
+            }
+            console.log(xStr);
         }
-    });
+    }
+};
+
+function colorChar(rgb, char) {
+    return chalk.rgb(rgb.r, rgb.g, rgb.b)(char);
 };
 
 module.exports = UnicornHatHD;
